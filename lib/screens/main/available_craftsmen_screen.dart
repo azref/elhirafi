@@ -1,3 +1,5 @@
+// lib/screens/main/available_craftsmen_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -6,9 +8,7 @@ import '../../constants/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../models/profession_model.dart';
 import '../../providers/auth_provider.dart';
-// --- تم تصحيح مسارات الاستيراد هنا ---
-import '../../data/cities_data.dart';
-// ------------------------------------
+import '../../data/cities_data.dart'; // <-- تم تصحيح المسار
 import '../chat/chat_detail_screen.dart';
 
 class AvailableCraftsmenScreen extends StatefulWidget {
@@ -28,7 +28,6 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   DocumentSnapshot? _lastDocument;
   static const int _pageSize = 20;
   
-  // --- تم إضافة هذا السطر لحل خطأ الوصول ---
   final ProfessionsData _professionsData = ProfessionsData();
 
   @override
@@ -118,26 +117,23 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
     _loadCraftsmen();
   }
   
-  // --- دالة لتحديد دولة المستخدم بناءً على مدن العمل ---
   String _getUserCountry(UserModel? user) {
-    if (user == null || user.workCities.isEmpty) return 'المغرب'; // دولة افتراضية
+    if (user == null || user.workCities.isEmpty) return 'المغرب';
     
     for (var entry in citiesByCountry.entries) {
       if (entry.value.contains(user.workCities.first)) {
         return entry.key;
       }
     }
-    return 'المغرب'; // دولة افتراضية
+    return 'المغرب';
   }
   
-  // --- دالة لتحديد رمز اللهجة ---
   String _getDialectCode(String countryName) {
     const countryToDialect = {
       'المغرب': 'MA',
       'الجزائر': 'DZ',
       'تونس': 'TN',
       'المملكة العربية السعودية': 'AR',
-      // ... أضف باقي الدول حسب الحاجة
     };
     return countryToDialect[countryName] ?? 'AR';
   }
@@ -146,12 +142,10 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   Widget build(BuildContext context) {
     final currentUser = Provider.of<AuthProvider>(context).user;
     
-    // --- تم تعديل هذه الأسطر ---
     final userCountryName = _getUserCountry(currentUser);
     final userDialect = _getDialectCode(userCountryName);
     final availableCities = citiesByCountry[userCountryName] ?? [];
     final professions = _professionsData.getAllProfessions();
-    // -------------------------
 
     return Scaffold(
       appBar: AppBar(
@@ -160,13 +154,11 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
       ),
       body: Column(
         children: [
-          // Filters
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.grey[100],
             child: Column(
               children: [
-                // Profession Filter
                 DropdownButtonFormField<String>(
                   value: _selectedProfessionId,
                   decoration: InputDecoration(
@@ -185,7 +177,6 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                     ...professions.map((profession) {
                       return DropdownMenuItem(
                         value: profession.id,
-                        // --- تم تعديل هذا السطر ---
                         child: Text(profession.getNameByDialect(userDialect)),
                       );
                     }),
@@ -198,7 +189,6 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                // City Filter
                 DropdownButtonFormField<String>(
                   value: _selectedCity,
                   decoration: InputDecoration(
@@ -231,8 +221,6 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
               ],
             ),
           ),
-
-          // Craftsmen List
           Expanded(
             child: _craftsmen.isEmpty && !_isLoading
                 ? Center(
@@ -279,7 +267,6 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: AppColors.primaryColor,
-                            // --- تم تعديل هذا الجزء ليتوافق مع UserModel ---
                             backgroundImage: craftsman.profileImageUrl.isNotEmpty
                                 ? NetworkImage(craftsman.profileImageUrl)
                                 : null,
@@ -314,7 +301,6 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                                   color: Colors.grey[600],
                                 ),
                               ),
-                              // --- تم تعديل هذا الجزء ليتوافق مع UserModel ---
                               if (craftsman.yearsOfExperience != null)
                                 Text(
                                   'الخبرة: ${craftsman.yearsOfExperience} سنة',
@@ -330,12 +316,11 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                                   icon: const Icon(Icons.message),
                                   color: AppColors.primaryColor,
                                   onPressed: () {
-                                    // TODO: Implement getOrCreateChat logic before navigating
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => ChatDetailScreen(
-                                          chatId: '', // Should be fetched or created
+                                          chatId: '',
                                           otherUserId: craftsman.id,
                                           otherUserName: craftsman.name,
                                         ),
@@ -349,12 +334,11 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                                 ),
                           onTap: isClientMode
                               ? () {
-                                  // TODO: Implement getOrCreateChat logic before navigating
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ChatDetailScreen(
-                                        chatId: '', // Should be fetched or created
+                                        chatId: '',
                                         otherUserId: craftsman.id,
                                         otherUserName: craftsman.name,
                                       ),
