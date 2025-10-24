@@ -1,9 +1,14 @@
+// lib/screens/main/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // <-- تم إضافة هذا الاستيراد
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -29,13 +34,16 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              // Share app functionality
+              Share.share('تحقق من تطبيق الصانع الحرفي: [رابط التطبيق]');
             },
           ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.pushNamed(context, '/settings');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
             },
           ),
         ],
@@ -45,7 +53,7 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             child: _buildDashboard(context, user.userType),
           ),
-          const BannerAdWidget(adUnitId: 'home_screen'),
+          const BannerAdWidget(), // <-- تم تعديل هذا السطر
         ],
       ),
     );
@@ -54,11 +62,11 @@ class HomeScreen extends StatelessWidget {
   Widget _buildDashboard(BuildContext context, String userType) {
     switch (userType) {
       case 'client':
-        return _ClientDashboard();
+        return const _ClientDashboard();
       case 'craftsman':
-        return _CraftsmanDashboard();
+        return const _CraftsmanDashboard();
       case 'supplier':
-        return _SupplierDashboard();
+        return const _SupplierDashboard();
       default:
         return Center(
           child: Column(
@@ -77,7 +85,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  Provider.of<AuthProvider>(context, listen: false).logout();
+                  Provider.of<AuthProvider>(context, listen: false).signOut();
                 },
                 child: const Text('تسجيل الخروج'),
               ),
@@ -89,6 +97,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _ClientDashboard extends StatelessWidget {
+  const _ClientDashboard();
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -119,7 +128,7 @@ class _ClientDashboard extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.pushNamed(context, '/create_request');
+                // Navigator.pushNamed(context, '/create_request');
               },
               icon: const Icon(Icons.add),
               label: const Text('إنشاء طلب جديد'),
@@ -139,9 +148,11 @@ class _ClientDashboard extends StatelessWidget {
 }
 
 class _CraftsmanDashboard extends StatelessWidget {
+  const _CraftsmanDashboard();
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<AuthProvider>(context).user;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
 
     return Center(
       child: Padding(
@@ -175,14 +186,8 @@ class _CraftsmanDashboard extends StatelessWidget {
                 const SizedBox(width: 16),
                 Switch(
                   value: user?.isAvailable ?? false,
-                  onChanged: (value) async {
-                    // Update availability
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user?.id)
-                        .update({'isAvailable': value});
-                    Provider.of<AuthProvider>(context, listen: false)
-                        .refreshUser();
+                  onChanged: (value) {
+                    authProvider.updateAvailability(value);
                   },
                   activeColor: AppColors.primaryColor,
                 ),
@@ -196,6 +201,7 @@ class _CraftsmanDashboard extends StatelessWidget {
 }
 
 class _SupplierDashboard extends StatelessWidget {
+  const _SupplierDashboard();
   @override
   Widget build(BuildContext context) {
     return Center(
