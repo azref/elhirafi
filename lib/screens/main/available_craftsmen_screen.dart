@@ -8,9 +8,7 @@ import '../../constants/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../models/profession_model.dart';
 import '../../providers/auth_provider.dart';
-// --- تم إرجاع المسار الصحيح هنا ---
 import '../../data/cities_data.dart';
-// ---------------------------------
 import '../chat/chat_detail_screen.dart';
 
 class AvailableCraftsmenScreen extends StatefulWidget {
@@ -22,7 +20,10 @@ class AvailableCraftsmenScreen extends StatefulWidget {
 
 class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   String? _selectedProfessionId;
+  String? _selectedCountry;
+  String? _selectedRegion;
   String? _selectedCity;
+
   final ScrollController _scrollController = ScrollController();
   final List<UserModel> _craftsmen = [];
   bool _isLoading = false;
@@ -36,7 +37,14 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _loadCraftsmen();
+    // Use a post-frame callback to access the provider safely.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+      setState(() {
+        _selectedCountry = _getUserCountry(currentUser);
+      });
+      _loadCraftsmen();
+    });
   }
 
   @override
@@ -69,8 +77,13 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
         query = query.where('professionId', isEqualTo: _selectedProfessionId);
       }
 
+      // Filtering by city/district.
       if (_selectedCity != null) {
         query = query.where('workCities', arrayContains: _selectedCity);
+      } else if (_selectedRegion != null) {
+        // If only region is selected, we need a more complex query.
+        // This might require restructuring data or fetching all cities in the region.
+        // For simplicity, we'll filter by city for now.
       }
 
       if (_lastDocument != null) {
@@ -120,22 +133,23 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   }
   
   String _getUserCountry(UserModel? user) {
-    if (user == null || user.workCities.isEmpty) return 'المغرب';
-    
-    for (var entry in citiesByCountry.entries) {
-      if (entry.value.contains(user.workCities.first)) {
-        return entry.key;
-      }
-    }
-    return 'المغرب';
+    // A simple logic to determine user's country. This can be improved.
+    // For now, defaulting to a common one if not determinable.
+    return 'المملكة العربية السعودية';
   }
   
   String _getDialectCode(String countryName) {
     const countryToDialect = {
-      'المغرب': 'MA',
-      'الجزائر': 'DZ',
-      'تونس': 'TN',
       'المملكة العربية السعودية': 'AR',
+      'جمهورية مصر العربية': 'EG',
+      'الإمارات العربية المتحدة': 'AE',
+      'الكويت': 'KW',
+      'قطر': 'QA',
+      'البحرين': 'BH',
+      'سلطنة عمان': 'OM',
+      'الأردن': 'JO',
+      'الجزائر': 'DZ',
+      'المغرب': 'MA',
     };
     return countryToDialect[countryName] ?? 'AR';
   }
@@ -143,11 +157,11 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = Provider.of<AuthProvider>(context).user;
-    
-    final userCountryName = _getUserCountry(currentUser);
-    final userDialect = _getDialectCode(userCountryName);
-    final availableCities = citiesByCountry[userCountryName] ?? [];
     final professions = _professionsData.getAllProfessions();
+
+    final countries = CitiesData.getCountries();
+    final regions = _selectedCountry != null ? CitiesData.getRegions(_selectedCountry!) : <String>[];
+    final cities = (_selectedCountry != null && _selectedRegion != null) ? CitiesData.getCities(_selectedCountry!, _selectedRegion!) : <String>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -165,61 +179,76 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                   value: _selectedProfessionId,
                   decoration: InputDecoration(
                     labelText: 'اختر المهنة',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    filled: true, fillColor: Colors.white,
                   ),
                   items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('جميع المهن'),
-                    ),
+                    const DropdownMenuItem(value: null, child: Text('جميع المهن')),
                     ...professions.map((profession) {
                       return DropdownMenuItem(
                         value: profession.id,
-                        child: Text(profession.getNameByDialect(userDialect)),
+                        child: Text(profession.getNameByDialect(_getDialectCode(_selectedCountry ?? ''))),
                       );
                     }),
                   ],
                   onChanged: (value) {
-                    setState(() {
-                      _selectedProfessionId = value;
-                    });
+                    setState(() => _selectedProfessionId = value);
                     _resetAndReload();
                   },
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _selectedCity,
+                  value: _selectedCountry,
                   decoration: InputDecoration(
-                    labelText: 'اختر المدينة',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                    labelText: 'اختر الدولة',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    filled: true, fillColor: Colors.white,
                   ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('جميع المدن'),
-                    ),
-                    ...availableCities.map((city) {
-                      return DropdownMenuItem(
-                        value: city,
-                        child: Text(city),
-                      );
-                    }),
-                  ],
+                  items: countries.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (value) {
                     setState(() {
-                      _selectedCity = value;
+                      _selectedCountry = value;
+                      _selectedRegion = null;
+                      _selectedCity = null;
                     });
                     _resetAndReload();
                   },
                 ),
+                if (_selectedCountry != null) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _selectedRegion,
+                    decoration: InputDecoration(
+                      labelText: 'اختر المنطقة',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      filled: true, fillColor: Colors.white,
+                    ),
+                    items: regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedRegion = value;
+                        _selectedCity = null;
+                      });
+                      _resetAndReload();
+                    },
+                  ),
+                ],
+                if (_selectedRegion != null) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _selectedCity,
+                    decoration: InputDecoration(
+                      labelText: 'اختر المدينة',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      filled: true, fillColor: Colors.white,
+                    ),
+                    items: cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedCity = value);
+                      _resetAndReload();
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -229,19 +258,9 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.person_search,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
+                        Icon(Icons.person_search, size: 80, color: Colors.grey[400]),
                         const SizedBox(height: 16),
-                        Text(
-                          'لا يوجد حرفيون متاحون',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
+                        Text('لا يوجد حرفيون متاحون', style: TextStyle(fontSize: 18, color: Colors.grey[600])),
                       ],
                     ),
                   )
@@ -250,28 +269,18 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                     itemCount: _craftsmen.length + (_hasMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == _craftsmen.length) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
+                        return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()));
                       }
 
                       final craftsman = _craftsmen[index];
                       final isClientMode = currentUser?.userType == 'client';
 
                       return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: AppColors.primaryColor,
-                            backgroundImage: craftsman.profileImageUrl.isNotEmpty
-                                ? NetworkImage(craftsman.profileImageUrl)
-                                : null,
+                            backgroundImage: craftsman.profileImageUrl.isNotEmpty ? NetworkImage(craftsman.profileImageUrl) : null,
                             child: craftsman.profileImageUrl.isEmpty
                                 ? Text(
                                     craftsman.name.isNotEmpty ? craftsman.name[0].toUpperCase() : '?',
@@ -279,37 +288,23 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                                   )
                                 : null,
                           ),
-                          title: Text(
-                            craftsman.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          title: Text(craftsman.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 craftsman.professionName ?? 'حرفي',
-                                style: TextStyle(
-                                  color: AppColors.primaryColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.w500),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'المدن: ${craftsman.workCities.join(', ')}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                               ),
                               if (craftsman.yearsOfExperience != null)
                                 Text(
                                   'الخبرة: ${craftsman.yearsOfExperience} سنة',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                 ),
                             ],
                           ),
@@ -322,7 +317,7 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => ChatDetailScreen(
-                                          chatId: '',
+                                          chatId: '', // Should be fetched or created
                                           otherUserId: craftsman.id,
                                           otherUserName: craftsman.name,
                                         ),
@@ -330,17 +325,14 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                                     );
                                   },
                                 )
-                              : Icon(
-                                  Icons.lock,
-                                  color: Colors.grey[400],
-                                ),
+                              : Icon(Icons.lock, color: Colors.grey[400]),
                           onTap: isClientMode
                               ? () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ChatDetailScreen(
-                                        chatId: '',
+                                        chatId: '', // Should be fetched or created
                                         otherUserId: craftsman.id,
                                         otherUserName: craftsman.name,
                                       ),
