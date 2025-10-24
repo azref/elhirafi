@@ -1,3 +1,5 @@
+// lib/screens/main/settings_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -34,12 +36,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          // User Mode Section
-          if (user != null) ...[
+          // --- بداية التعديل ---
+          // User Mode Section (only show if user is not a supplier)
+          if (user != null && user.userType != 'supplier') ...[
             _buildSectionHeader(AppStrings.currentMode),
             _buildModeCard(user, authProvider),
             const Divider(height: 32),
           ],
+          // --- نهاية التعديل ---
 
           // App Settings
           _buildSectionHeader(AppStrings.settings),
@@ -224,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       Text(
-                        user.displayName,
+                        user.name,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -367,7 +371,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement mode switching
+              // Update user type in Firestore
+              await authProvider.updateUserType(newMode);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('تم تغيير الوضع بنجاح')),
               );
@@ -418,10 +423,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              Navigator.pop(context); // Close the dialog first
               await authProvider.signOut();
-              if (mounted) {
-                Navigator.pop(context);
-              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorColor),
             child: const Text(AppStrings.logout),
@@ -458,4 +461,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
-
