@@ -1,40 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
 import '../../models/chat_model.dart';
-import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/chat_provider.dart';
+import '../../services/chat_service.dart';
 import '../chat/chat_detail_screen.dart';
 
 class ChatsScreen extends StatelessWidget {
   const ChatsScreen({super.key});
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return AppStrings.now;
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes} ${AppStrings.minutesAgo}';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours} ${AppStrings.hoursAgo}';
-    } else {
-      return '${difference.inDays} ${AppStrings.daysAgo}';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final authState = Provider.of<AuthProvider>(context);
-    final UserModel? user = authState.user;
+    final currentUser = Provider.of<AuthProvider>(context).user;
 
-    if (user == null) {
+    if (currentUser == null) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Text('الرجاء تسجيل الدخول'),
         ),
       );
     }
@@ -43,148 +27,177 @@ class ChatsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(AppStrings.chats),
         backgroundColor: AppColors.primaryColor,
-        foregroundColor: AppColors.textOnPrimaryColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search functionality
-            },
-          ),
-        ],
       ),
-      body: StreamBuilder<List<ChatModel>>(
-        stream: Provider.of<ChatProvider>(context).getUserChats(user.id),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: ChatService().getUserChats(currentUser.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Text('خطأ: ${snapshot.error}'),
+            );
           }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.chat_bubble_outline,
-                    size: 64,
-                    color: AppColors.textSecondaryColor,
+                    size: 80,
+                    color: Colors.grey[400],
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    AppStrings.noChatsFound,
+                    'لا توجد محادثات بعد',
                     style: TextStyle(
                       fontSize: 18,
-                      color: AppColors.textSecondaryColor,
+                      color: Colors.grey[600],
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'ابدأ محادثة جديدة من خلال الرد على طلب عمل',
+                    'ابدأ بالتواصل مع الحرفيين',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textHintColor,
+                      color: Colors.grey[500],
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
             );
           }
-          final chats = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: () async {
-              // Invalidate and refetch
+
+          final chats = snapshot.data!.docs
+              .map((doc) => Chat.fromFirestore(doc))
+              .toList();
+
+          return ListView.builder(
+            itemCount: chats.length,
+            itemBuilder: (context, index) {
+              final chat = chats[index];
+              final otherUserId = chat.participants
+                  .firstWhere((id) => id != currentUser.id);
+
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(otherUserId)
+                    .get(),
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return const ListTile(
+                      leading: CircleAvatar(child: Icon(Icons.person)),
+                      title: Text('جاري التحميل...'),
+                    );
+                  }
+
+                  final otherUserData =
+                      userSnapshot.data!.data() as Map<String, dynamic>;
+                  final otherUserName = otherUserData['name'] ?? 'مستخدم';
+                  final otherUserImage = otherUserData['profileImageUrl'] ?? '';
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primaryColor,
+                        backgroundImage: otherUserImage.isNotEmpty
+                            ? NetworkImage(otherUserImage)
+                            : null,
+                        child: otherUserImage.isEmpty
+                            ? Text(
+                                otherUserName[0].toUpperCase(),
+                                style: const TextStyle(color: Colors.white),
+                              )
+                            : null,
+                      ),
+                      title: Text(
+                        otherUserName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        chat.lastMessage,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _formatTime(chat.lastMessageTime),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          if (chat.unreadCount > 0)
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primaryColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${chat.unreadCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatDetailScreen(
+                              chatId: chat.id,
+                              otherUserId: otherUserId,
+                              otherUserName: otherUserName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              );
             },
-            child: ListView.builder(
-              itemCount: chats.length,
-              itemBuilder: (context, index) {
-                final chat = chats[index];
-                return _buildChatTile(context, chat, user.id);
-              },
-            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildChatTile(BuildContext context, ChatModel chat, String currentUserId) {
-    final otherUserId = chat.participants.firstWhere((id) => id != currentUserId, orElse: () => '');
-    final otherUserName = chat.participantNames[otherUserId] ?? 'مستخدم';
-    final isLastMessageFromMe = chat.lastMessageSenderId == currentUserId;
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: AppColors.primaryColor,
-        child: Text(
-          otherUserName.isNotEmpty ? otherUserName.substring(0, 1).toUpperCase() : 'U',
-          style: const TextStyle(
-            color: AppColors.textOnPrimaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      title: Text(
-        otherUserName,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimaryColor,
-        ),
-      ),
-      subtitle: Row(
-        children: [
-          if (isLastMessageFromMe) ...[
-            const Icon(
-              Icons.done,
-              size: 16,
-              color: AppColors.textSecondaryColor,
-            ),
-            const SizedBox(width: 4),
-          ],
-          Expanded(
-            child: Text(
-              chat.lastMessageContent.isEmpty 
-                  ? 'لا توجد رسائل' 
-                  : chat.lastMessageContent,
-              style: const TextStyle(
-                color: AppColors.textSecondaryColor,
-                fontSize: 14,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            _formatTimeAgo(chat.lastMessageTime),
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondaryColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // TODO: Add unread message count indicator
-        ],
-      ),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => ChatDetailScreen(
-              chatId: chat.id,
-              otherUserName: otherUserName,
-              otherUserId: otherUserId,
-            ),
-          ),
-        );
-      },
-    );
+    if (difference.inDays > 0) {
+      return '${difference.inDays} يوم';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} ساعة';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} دقيقة';
+    } else {
+      return 'الآن';
+    }
   }
 }
