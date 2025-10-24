@@ -63,7 +63,7 @@ class AuthProvider with ChangeNotifier {
     required String name,
     required String phoneNumber,
     required String userType,
-    File? profileImage, // <-- تم التعديل هنا
+    File? profileImage,
     String? professionName,
     List<String>? workCities,
   }) async {
@@ -151,7 +151,22 @@ class AuthProvider with ChangeNotifier {
     if (_user != null) {
       try {
         await _firestore.collection('users').doc(_user!.id).update({'isAvailable': isAvailable});
-        _user = _user!.copyWith(isAvailable: isAvailable);
+        // --- تم تعديل هذا الجزء لحل خطأ copyWith ---
+        _user = UserModel(
+          id: _user!.id,
+          name: _user!.name,
+          email: _user!.email,
+          phoneNumber: _user!.phoneNumber,
+          userType: _user!.userType,
+          profileImageUrl: _user!.profileImageUrl,
+          professionName: _user!.professionName,
+          workCities: _user!.workCities,
+          isAvailable: isAvailable, // القيمة الجديدة
+          rating: _user!.rating,
+          reviewCount: _user!.reviewCount,
+          createdAt: _user!.createdAt,
+        );
+        // ------------------------------------------
         notifyListeners();
       } catch (e) {
         print("Failed to update availability: $e");
