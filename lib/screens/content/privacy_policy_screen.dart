@@ -1,3 +1,5 @@
+// lib/screens/content/privacy_policy_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -22,31 +24,17 @@ class PrivacyPolicyScreen extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'خطأ في تحميل سياسة الخصوصية',
-                style: TextStyle(color: Colors.red[700]),
-              ),
-            );
+            return const Center(child: Text('خطأ في تحميل سياسة الخصوصية'));
           }
 
-          return Markdown(
-            data: snapshot.data ?? '',
-            styleSheet: MarkdownStyleSheet(
-              h1: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryColor,
-              ),
-              h2: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryColor,
-              ),
-              p: const TextStyle(
-                fontSize: 16,
-                height: 1.6,
-                color: AppColors.textPrimaryColor,
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: Markdown(
+              data: snapshot.data ?? '',
+              styleSheet: MarkdownStyleSheet(
+                h1: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
+                h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimaryColor),
+                p: const TextStyle(fontSize: 16, height: 1.6, color: AppColors.textPrimaryColor),
               ),
             ),
           );
@@ -55,4 +43,3 @@ class PrivacyPolicyScreen extends StatelessWidget {
     );
   }
 }
-
