@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import '../models/product_model.dart';
+import '../models/store_model.dart'; // <-- تم إضافة الاستيراد المفقود
 
 class StoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -48,31 +49,45 @@ class StoreService {
     }
   }
 
-  // Get products by store
-  Stream<List<ProductModel>> getStoreProducts(String supplierId) {
-    return _firestore
+  // Get products by store (تم تعديل الدالة لتقبل limit)
+  Stream<List<ProductModel>> getStoreProducts(String supplierId, {int? limit}) {
+    Query query = _firestore
         .collection('products')
         .where('supplierId', isEqualTo: supplierId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ProductModel.fromFirestore(doc))
-            .toList());
+        .orderBy('createdAt', descending: true);
+
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    return query.snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList());
   }
 
-  // Get product count for supplier
+  // Get product count for supplier (تم تحسين الدالة)
   Future<int> getProductCount(String supplierId) async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      final snapshot = await _firestore
           .collection('products')
           .where('supplierId', isEqualTo: supplierId)
+          .count() // استخدام count() لتحسين الأداء
           .get();
-      return snapshot.docs.length;
+      return snapshot.count ?? 0;
     } catch (e) {
       print('Error getting product count: $e');
       return 0;
     }
   }
+
+  // --- دالة جديدة لجلب عدد الطلبات (وهمية حاليًا) ---
+  Future<int> getOrdersCount(String supplierId) async {
+    // في المستقبل، سيتم هنا جلب عدد الطلبات الحقيقي من Firestore
+    // حاليًا، سنرجع قيمة وهمية
+    await Future.delayed(const Duration(milliseconds: 500)); // محاكاة استدعاء الشبكة
+    return 5; // قيمة وهمية
+  }
+  // --- نهاية الدالة الجديدة ---
+
 
   // Add product
   Future<String?> addProduct(ProductModel product) async {
@@ -201,4 +216,3 @@ class StoreService {
     }
   }
 }
-
