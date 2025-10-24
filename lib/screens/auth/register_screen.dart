@@ -9,9 +9,17 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../data/cities_data.dart';
 import '../../data/professions_data.dart';
+import '../../models/user_model.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final bool isEditing;
+  final UserModel? userToEdit;
+
+  const RegisterScreen({
+    super.key,
+    this.isEditing = false,
+    this.userToEdit,
+  });
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -24,14 +32,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  String _userType = AppStrings.client;
+  String? _userType;
   String? _selectedProfession;
   String? _selectedCountry;
   List<String> _selectedWorkCities = [];
   File? _image;
+  String? _networkImageUrl;
 
   final ImagePicker _picker = ImagePicker();
   final ProfessionsData _professionsData = ProfessionsData();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEditing && widget.userToEdit != null) {
+      final user = widget.userToEdit!;
+      _nameController.text = user.name;
+      _emailController.text = user.email;
+      _phoneController.text = user.phoneNumber;
+      _userType = user.userType;
+      _selectedProfession = user.professionName;
+      _selectedCountry = user.country;
+      _selectedWorkCities = List.from(user.workCities);
+      _networkImageUrl = user.profileImageUrl;
+    } else {
+      _userType = AppStrings.client;
+    }
+  }
 
   @override
   void dispose() {
@@ -47,6 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
+        _networkImageUrl = null; // Clear network image if a new one is picked
       });
     }
   }
@@ -68,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Future<void> _register() async {
+  Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -80,28 +108,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
     try {
-      await authProvider.register(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        name: _nameController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        userType: _userType,
-        professionName: _selectedProfession,
-        workCities: _selectedWorkCities,
-        country: _selectedCountry,
-        profileImage: _image,
-      );
-      if (mounted) {
+      if (widget.isEditing) {
+        // --- Logic for updating profile ---
+        Map<String, dynamic> updates = {
+          'name': _nameController.text.trim(),
+          'phoneNumber': _phoneController.text.trim(),
+          'userType': _userType,
+          'professionName': _selectedProfession,
+          'workCities': _selectedWorkCities,
+          'country': _selectedCountry,
+        };
+        // Note: Email and password updates are handled separately for security
+        await authProvider.updateUserProfile(widget.userToEdit!.id, updates);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تحديث الملف الشخصي بنجاح')),
+        );
+      } else {
+        // --- Logic for new registration ---
+        await authProvider.register(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          name: _nameController.text.trim(),
+          phoneNumber: _phoneController.text.trim(),
+          userType: _userType!,
+          professionName: _selectedProfession,
+          workCities: _selectedWorkCities,
+          country: _selectedCountry,
+          profileImage: _image,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم التسجيل بنجاح')),
         );
+      }
+      if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل التسجيل: ${e.toString()}')),
+          SnackBar(content: Text('حدث خطأ: ${e.toString()}')),
         );
       }
     }
@@ -112,7 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final auth = Provider.of<AuthProvider>(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.register),
+        title: Text(widget.isEditing ? 'تعديل الملف الشخصي' : 'إنشاء حساب'),
       ),
       body: auth.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -135,16 +182,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _emailController,
                       labelText: AppStrings.email,
                       keyboardType: TextInputType.emailAddress,
+                      enabled: !widget.isEditing, // Disable email editing
                       validator: (value) => value!.isEmpty ? AppStrings.emailRequired : null,
                     ),
                     const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _passwordController,
-                      labelText: AppStrings.password,
-                      obscureText: true,
-                      validator: (value) => value!.isEmpty ? AppStrings.passwordRequired : null,
-                    ),
-                    const SizedBox(height: 16),
+                    if (!widget.isEditing) // Only show password for new registration
+                      CustomTextField(
+                        controller: _passwordController,
+                        labelText: AppStrings.password,
+                        obscureText: true,
+                        validator: (value) => value!.isEmpty ? AppStrings.passwordRequired : null,
+                      ),
+                    if (!widget.isEditing) const SizedBox(height: 16),
                     CustomTextField(
                       controller: _phoneController,
                       labelText: AppStrings.phone,
@@ -163,8 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                     const SizedBox(height: 24),
                     CustomButton(
-                      text: AppStrings.register,
-                      onPressed: _register,
+                      text: widget.isEditing ? 'حفظ التغييرات' : 'إنشاء حساب',
+                      onPressed: _submitForm,
                     ),
                   ],
                 ),
@@ -180,8 +229,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           CircleAvatar(
             radius: 60,
             backgroundColor: Colors.grey[300],
-            backgroundImage: _image != null ? FileImage(_image!) : null,
-            child: _image == null ? const Icon(Icons.person, size: 60, color: Colors.white) : null,
+            backgroundImage: _image != null
+                ? FileImage(_image!)
+                : (_networkImageUrl != null && _networkImageUrl!.isNotEmpty
+                    ? NetworkImage(_networkImageUrl!)
+                    : null) as ImageProvider?,
+            child: (_image == null && (_networkImageUrl == null || _networkImageUrl!.isEmpty))
+                ? const Icon(Icons.person, size: 60, color: Colors.white)
+                : null,
           ),
           Positioned(
             bottom: 0,
@@ -216,7 +271,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             DropdownMenuItem(value: AppStrings.craftsman, child: Text(AppStrings.craftsman)),
             DropdownMenuItem(value: AppStrings.supplier, child: Text(AppStrings.supplier)),
           ],
-          onChanged: (value) {
+          onChanged: widget.isEditing ? null : (value) { // Disable changing type on edit
             if (value != null) {
               setState(() {
                 _userType = value;
@@ -243,13 +298,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           items: CitiesData.getCountries().map((String country) {
             return DropdownMenuItem<String>(
               value: country,
-              child: Text(country),
+              child: Text(country, style: const TextStyle(fontSize: 14)), // تصغير الخط
             );
           }).toList(),
           onChanged: (newValue) {
             setState(() {
               _selectedCountry = newValue;
-              _selectedWorkCities.clear(); // مسح المدن عند تغيير الدولة
+              _selectedWorkCities.clear();
             });
           },
         ),
@@ -272,7 +327,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           items: _professionsData.getAllProfessions().map((profession) {
             return DropdownMenuItem<String>(
               value: profession.getNameByDialect('AR'),
-              child: Text(profession.getNameByDialect('AR')),
+              child: Text(profession.getNameByDialect('AR'), style: const TextStyle(fontSize: 14)), // تصغير الخط
             );
           }).toList(),
           onChanged: (newValue) {
@@ -306,6 +361,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _selectedWorkCities.isEmpty ? AppStrings.selectWorkCities : _selectedWorkCities.join(', '),
                     style: TextStyle(
                       color: _selectedWorkCities.isEmpty ? Colors.grey[600] : Colors.black,
+                      fontSize: 14, // تصغير الخط
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -323,7 +379,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               runSpacing: 4.0,
               children: _selectedWorkCities
                   .map((city) => Chip(
-                        label: Text(city),
+                        label: Text(city, style: const TextStyle(fontSize: 12)), // تصغير الخط
                         onDeleted: () {
                           setState(() {
                             _selectedWorkCities.remove(city);
@@ -406,7 +462,7 @@ class _CitySelectionDialogState extends State<_CitySelectionDialog> {
                   final city = _filteredCities[index];
                   final isSelected = _tempSelectedCities.contains(city);
                   return CheckboxListTile(
-                    title: Text(city),
+                    title: Text(city, style: const TextStyle(fontSize: 14)), // تصغير الخط
                     value: isSelected,
                     onChanged: (bool? value) {
                       setState(() {
