@@ -12,8 +12,7 @@ import '../content/privacy_policy_screen.dart';
 import '../content/terms_of_service_screen.dart';
 import '../content/about_us_screen.dart';
 import '../content/contact_us_screen.dart';
-// سنحتاج هذا الملف للانتقال إلى شاشة تعديل الملف الشخصي
-import 'profile_screen.dart'; 
+import 'profile_screen.dart'; // للانتقال إلى شاشة تعديل الملف الشخصي
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,13 +25,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isDarkMode = false;
   String _selectedLanguage = 'العربية';
 
-  // دالة لتغيير الوضع الليلي (ملاحظة 3)
+  // دالة لتغيير الوضع الليلي
   void _toggleDarkMode(bool value) {
     setState(() {
       _isDarkMode = value;
     });
     // TODO: هنا يجب أن تضيف الكود الذي يغير السمة فعليًا في التطبيق
-    // على سبيل المثال، باستخدام provider لإدارة السمات.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_isDarkMode ? 'تم تفعيل الوضع الليلي' : 'تم إيقاف الوضع الليلي')),
     );
@@ -43,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
 
-    // ملاحظة 4: تغيير اتجاه الشاشة
+    // تغيير اتجاه الشاشة بالكامل
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -53,9 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         body: ListView(
           children: [
+            // إخفاء قسم التحويل للموردين
             if (user != null && user.userType != 'supplier') ...[
               _buildSectionHeader(AppStrings.currentMode),
-              // ملاحظة 1: تحويل الأزرار إلى قائمة منسدلة
+              // استخدام القائمة المنسدلة لتبديل الوضع
               _buildModeDropdown(user, authProvider),
               const Divider(height: 32),
             ],
@@ -67,12 +66,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: _selectedLanguage,
               onTap: () => _showLanguageDialog(),
             ),
-            // ملاحظة 3: تفعيل الوضع الليلي
+            // تفعيل مفتاح الوضع الليلي
             _buildSwitchTile(
               icon: Icons.dark_mode,
               title: AppStrings.darkMode,
               value: _isDarkMode,
-              onChanged: _toggleDarkMode, // الربط بالدالة
+              onChanged: _toggleDarkMode,
             ),
             _buildSettingsTile(
               icon: Icons.notifications,
@@ -82,8 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Divider(height: 32),
 
             _buildSectionHeader('القانونية والمعلومات'),
-            // ... باقي الإعدادات تبقى كما هي
-             _buildSettingsTile(
+            _buildSettingsTile(
               icon: Icons.privacy_tip,
               title: AppStrings.privacyPolicy,
               onTap: () {
@@ -97,11 +95,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsOfServiceScreen()));
               },
             ),
-            // ...
+            _buildSettingsTile(
+              icon: Icons.info,
+              title: AppStrings.aboutUs,
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsScreen()));
+              },
+            ),
+            _buildSettingsTile(
+              icon: Icons.contact_support,
+              title: AppStrings.contactUs,
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsScreen()));
+              },
+            ),
+            const Divider(height: 32),
+
+            _buildSectionHeader('مشاركة التطبيق'),
+            _buildSettingsTile(
+              icon: Icons.share,
+              title: AppStrings.shareApp,
+              onTap: _shareApp,
+            ),
+            _buildSettingsTile(
+              icon: Icons.star,
+              title: AppStrings.rateApp,
+              onTap: _rateApp,
+            ),
+            const Divider(height: 32),
 
             if (user != null) ...[
               _buildSectionHeader(AppStrings.accountType),
-              // ملاحظة 5: تفعيل زر تعديل الملف الشخصي
+              // تفعيل زر تعديل الملف الشخصي
               _buildSettingsTile(
                 icon: Icons.edit,
                 title: AppStrings.editProfile,
@@ -118,10 +143,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 textColor: AppColors.errorColor,
                 onTap: () => _showLogoutDialog(authProvider),
               ),
-              // ...
+              _buildSettingsTile(
+                icon: Icons.delete_forever,
+                title: AppStrings.deleteAccount,
+                textColor: AppColors.errorColor,
+                onTap: () => _showDeleteAccountDialog(authProvider),
+              ),
             ],
+
             const SizedBox(height: 32),
-            const Center(child: Text('${AppStrings.version} 1.0.0')),
+            Center(
+              child: Text(
+                '${AppStrings.version} 1.0.0',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -129,14 +165,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // الدالة الجديدة للقائمة المنسدلة (ملاحظة 1)
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  // الدالة الجديدة للقائمة المنسدلة
   Widget _buildModeDropdown(UserModel user, AuthProvider authProvider) {
+    // التأكد من أن القيمة الحالية موجودة في القائمة
+    String? dropdownValue = (user.userType == AppStrings.client || user.userType == AppStrings.craftsman)
+        ? user.userType
+        : AppStrings.client;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: DropdownButtonFormField<String>(
-          value: user.userType,
+          value: dropdownValue,
           decoration: const InputDecoration(
             labelText: 'الوضع الحالي',
             border: OutlineInputBorder(),
@@ -151,23 +206,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _switchMode(newValue, authProvider);
             }
           },
-        ),
-      ),
-    );
-  }
-
-  // ... باقي الدوال المساعدة تبقى كما هي
-  // _buildSectionHeader, _buildSettingsTile, _buildSwitchTile, _showLanguageDialog, etc.
-  
-   Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: AppColors.primaryColor,
         ),
       ),
     );
@@ -201,17 +239,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primaryColor),
+    return SwitchListTile(
+      secondary: Icon(icon, color: AppColors.primaryColor),
       title: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppColors.primaryColor,
-      ),
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppColors.primaryColor,
     );
   }
 
@@ -228,7 +264,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: 'العربية',
               groupValue: _selectedLanguage,
               onChanged: (value) {
-                setState(() => _selectedLanguage = value!);
+                if (value != null) {
+                  setState(() => _selectedLanguage = value);
+                }
                 Navigator.pop(context);
               },
             ),
@@ -270,8 +308,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '';
   }
 
+  void _shareApp() {
+    Share.share(
+      'تطبيق الصانع الحرفي - منصة ربط الحرفيين بأصحاب المشاريع\nhttps://play.google.com/store/apps/details?id=com.elsane3.app',
+    );
+  }
+
+  void _rateApp() async {
+    final url = Uri.parse('https://play.google.com/store/apps/details?id=com.elsane3.app');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _showLogoutDialog(AuthProvider authProvider) {
-     showDialog(
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text(AppStrings.logout),
@@ -283,11 +334,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); 
+              Navigator.pop(context);
               await authProvider.signOut();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorColor),
             child: const Text(AppStrings.logout),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppStrings.deleteAccount),
+        content: const Text(AppStrings.confirmDeleteAccount),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(AppStrings.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // TODO: Implement account deletion
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(AppStrings.accountDeleted)),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.errorColor),
+            child: const Text(AppStrings.delete),
           ),
         ],
       ),
