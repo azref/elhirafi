@@ -379,6 +379,8 @@ class _CitySelectionDialogState extends State<_CitySelectionDialog> {
                 value: _selectedCountry,
                 hint: const Text('اختر الدولة'),
                 isExpanded: true,
+                isDense: true,
+                style: const TextStyle(fontSize: 14, color: Colors.black, overflow: TextOverflow.ellipsis),
                 items: _countries.map((String country) {
                   return DropdownMenuItem<String>(value: country, child: Text(country));
                 }).toList(),
@@ -390,6 +392,8 @@ class _CitySelectionDialogState extends State<_CitySelectionDialog> {
                   value: _selectedRegion,
                   hint: const Text('اختر المنطقة/الجهة'),
                   isExpanded: true,
+                  isDense: true,
+                  style: const TextStyle(fontSize: 14, color: Colors.black, overflow: TextOverflow.ellipsis),
                   items: _regions.map((String region) {
                     return DropdownMenuItem<String>(value: region, child: Text(region));
                   }).toList(),
@@ -401,6 +405,8 @@ class _CitySelectionDialogState extends State<_CitySelectionDialog> {
                   value: _selectedCity,
                   hint: const Text('اختر المحافظة/المدينة'),
                   isExpanded: true,
+                  isDense: true,
+                  style: const TextStyle(fontSize: 14, color: Colors.black, overflow: TextOverflow.ellipsis),
                   items: _cities.map((String city) {
                     return DropdownMenuItem<String>(value: city, child: Text(city));
                   }).toList(),
@@ -409,7 +415,7 @@ class _CitySelectionDialogState extends State<_CitySelectionDialog> {
               const SizedBox(height: 10),
               if (_districts.isNotEmpty)
                 SizedBox(
-                  height: 200, // To make the list scrollable
+                  height: 200,
                   child: ListView.builder(
                     shrinkWrap: true,
                     itemCount: _districts.length,
