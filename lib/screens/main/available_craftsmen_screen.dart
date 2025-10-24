@@ -8,7 +8,9 @@ import '../../constants/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../models/profession_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../data/cities_data.dart'; // <-- تم تصحيح المسار
+// --- تم تصحيح المسار هنا ---
+import '../../data/cities_data.dart';
+// ---------------------------
 import '../chat/chat_detail_screen.dart';
 
 class AvailableCraftsmenScreen extends StatefulWidget {
