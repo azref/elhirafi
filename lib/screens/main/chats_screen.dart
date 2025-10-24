@@ -1,24 +1,42 @@
+// lib/screens/main/chats_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
 import '../../models/chat_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/chat_service.dart';
+import '../../providers/chat_provider.dart';
 import '../chat/chat_detail_screen.dart';
 
 class ChatsScreen extends StatelessWidget {
   const ChatsScreen({super.key});
 
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return AppStrings.now;
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes} ${AppStrings.minutesAgo}';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} ${AppStrings.hoursAgo}';
+    } else {
+      return '${difference.inDays} ${AppStrings.daysAgo}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentUser = Provider.of<AuthProvider>(context).user;
+    final UserModel? user = Provider.of<AuthProvider>(context).user;
 
-    if (currentUser == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('الرجاء تسجيل الدخول'),
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text(AppStrings.chats)),
+        body: const Center(
+          child: CircularProgressIndicator(),
         ),
       );
     }
@@ -27,177 +45,84 @@ class ChatsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(AppStrings.chats),
         backgroundColor: AppColors.primaryColor,
+        foregroundColor: Colors.white,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: ChatService().getUserChats(currentUser.id),
+      body: StreamBuilder<List<ChatModel>>(
+        stream: Provider.of<ChatProvider>(context).getUserChats(user.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
-            return Center(
-              child: Text('خطأ: ${snapshot.error}'),
-            );
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.chat_bubble_outline,
-                    size: 80,
-                    color: Colors.grey[400],
+                    size: 64,
+                    color: AppColors.textSecondaryColor,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
-                    'لا توجد محادثات بعد',
+                    AppStrings.noChatsFound,
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ابدأ بالتواصل مع الحرفيين',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
+                      color: AppColors.textSecondaryColor,
                     ),
                   ),
                 ],
               ),
             );
           }
-
-          final chats = snapshot.data!.docs
-              .map((doc) => Chat.fromFirestore(doc))
-              .toList();
-
+          final chats = snapshot.data!;
           return ListView.builder(
             itemCount: chats.length,
             itemBuilder: (context, index) {
               final chat = chats[index];
-              final otherUserId = chat.participants
-                  .firstWhere((id) => id != currentUser.id);
-
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(otherUserId)
-                    .get(),
-                builder: (context, userSnapshot) {
-                  if (!userSnapshot.hasData) {
-                    return const ListTile(
-                      leading: CircleAvatar(child: Icon(Icons.person)),
-                      title: Text('جاري التحميل...'),
+              final otherUserId = chat.participants.firstWhere((id) => id != user.id, orElse: () => '');
+              final otherUserName = chat.participantNames[otherUserId] ?? 'مستخدم غير معروف';
+              
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primaryColor,
+                    child: Text(
+                      otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(otherUserName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    chat.lastMessageContent,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Text(
+                    _formatTimeAgo(chat.lastMessageTime),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(
+                          chatId: chat.id,
+                          otherUserName: otherUserName,
+                          otherUserId: otherUserId,
+                        ),
+                      ),
                     );
-                  }
-
-                  final otherUserData =
-                      userSnapshot.data!.data() as Map<String, dynamic>;
-                  final otherUserName = otherUserData['name'] ?? 'مستخدم';
-                  final otherUserImage = otherUserData['profileImageUrl'] ?? '';
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primaryColor,
-                        backgroundImage: otherUserImage.isNotEmpty
-                            ? NetworkImage(otherUserImage)
-                            : null,
-                        child: otherUserImage.isEmpty
-                            ? Text(
-                                otherUserName[0].toUpperCase(),
-                                style: const TextStyle(color: Colors.white),
-                              )
-                            : null,
-                      ),
-                      title: Text(
-                        otherUserName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        chat.lastMessage,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            _formatTime(chat.lastMessageTime),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                          if (chat.unreadCount > 0)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primaryColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '${chat.unreadCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatDetailScreen(
-                              chatId: chat.id,
-                              otherUserId: otherUserId,
-                              otherUserName: otherUserName,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
+                  },
+                ),
               );
             },
           );
         },
       ),
     );
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays} يوم';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} ساعة';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} دقيقة';
-    } else {
-      return 'الآن';
-    }
   }
 }
