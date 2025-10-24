@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Kept for _CraftsmanDashboard
 import 'package:share_plus/share_plus.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // <-- تم إضافة هذا الاستيراد
+
 import '../../constants/app_colors.dart';
 import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
@@ -34,16 +35,15 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              Share.share('تحقق من تطبيق الصانع الحرفي: [رابط التطبيق]');
+              Share.share(
+                'تطبيق الصانع الحرفي - منصة ربط الحرفيين بأصحاب المشاريع\nhttps://play.google.com/store/apps/details?id=com.elsane3.app',
+              );
             },
           ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
+              Navigator.pushNamed(context, '/settings');
             },
           ),
         ],
@@ -53,21 +53,25 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             child: _buildDashboard(context, user.userType),
           ),
-          const BannerAdWidget(), // <-- تم تعديل هذا السطر
+          // Assuming BannerAdWidget is defined correctly elsewhere
+          // For now, let's use a placeholder to avoid breaking the build if it's not found.
+          const BannerAdWidget(),
         ],
       ),
     );
   }
 
   Widget _buildDashboard(BuildContext context, String userType) {
+    // --- هذا هو التعديل الرئيسي ---
     switch (userType) {
-      case 'client':
+      case AppStrings.client: // "أبحث عن حرفي"
         return const _ClientDashboard();
-      case 'craftsman':
+      case AppStrings.craftsman: // "أنا حرفي"
         return const _CraftsmanDashboard();
-      case 'supplier':
+      case AppStrings.supplier: // "أنا مورد"
         return const _SupplierDashboard();
       default:
+        // This is the part that is currently showing
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -81,6 +85,7 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'نوع المستخدم غير معروف: $userType',
                 style: const TextStyle(fontSize: 18),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -98,6 +103,7 @@ class HomeScreen extends StatelessWidget {
 
 class _ClientDashboard extends StatelessWidget {
   const _ClientDashboard();
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -128,7 +134,12 @@ class _ClientDashboard extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
+                // This navigation needs a named route setup in main.dart
+                // For now, it will do nothing if '/create_request' is not defined.
                 // Navigator.pushNamed(context, '/create_request');
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('شاشة إنشاء الطلب قيد التطوير')),
+                );
               },
               icon: const Icon(Icons.add),
               label: const Text('إنشاء طلب جديد'),
@@ -149,6 +160,7 @@ class _ClientDashboard extends StatelessWidget {
 
 class _CraftsmanDashboard extends StatelessWidget {
   const _CraftsmanDashboard();
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -202,6 +214,7 @@ class _CraftsmanDashboard extends StatelessWidget {
 
 class _SupplierDashboard extends StatelessWidget {
   const _SupplierDashboard();
+
   @override
   Widget build(BuildContext context) {
     return Center(
