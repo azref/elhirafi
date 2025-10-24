@@ -9,7 +9,9 @@ import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+// --- تم تصحيح المسار هنا ---
 import '../../data/cities_data.dart';
+// ---------------------------
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
