@@ -145,7 +145,7 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                     ...ProfessionsData().getAllProfessions().map((profession) {
                       return DropdownMenuItem(
                         value: profession.conceptKey,
-                        child: Text(profession.names['MA'] ?? profession.conceptKey),
+                        child: Text(profession.dialectNames['MA'] ?? profession.conceptKey),
                       );
                     }),
                   ],
