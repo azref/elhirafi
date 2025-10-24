@@ -1,5 +1,3 @@
-// lib/providers/auth_provider.dart
-
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -66,6 +64,7 @@ class AuthProvider with ChangeNotifier {
     File? profileImage,
     String? professionName,
     List<String>? workCities,
+    String? country, // تمت إضافة الدولة
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -91,6 +90,7 @@ class AuthProvider with ChangeNotifier {
         profileImageUrl: profileImageUrl ?? '',
         professionName: professionName,
         workCities: workCities ?? [],
+        country: country ?? 'المغرب', // قيمة افتراضية
         isAvailable: userType == AppStrings.craftsman ? true : false,
         createdAt: Timestamp.now(),
       );
@@ -132,6 +132,18 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+  
+  Future<void> updateAvailability(bool isAvailable) async {
+    if (_user != null) {
+      try {
+        await _firestore.collection('users').doc(_user!.id).update({'isAvailable': isAvailable});
+        _user = _user!.copyWith(isAvailable: isAvailable);
+        notifyListeners();
+      } catch (e) {
+        print("Failed to update availability: $e");
+      }
+    }
+  }
 
   Future<void> sendPasswordResetEmail(String email) async {
     _isLoading = true;
@@ -146,38 +158,34 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  
-  Future<void> updateAvailability(bool isAvailable) async {
-    if (_user != null) {
-      try {
-        await _firestore.collection('users').doc(_user!.id).update({'isAvailable': isAvailable});
-        // --- تم تعديل هذا الجزء لحل خطأ copyWith ---
-        _user = UserModel(
-          id: _user!.id,
-          name: _user!.name,
-          email: _user!.email,
-          phoneNumber: _user!.phoneNumber,
-          userType: _user!.userType,
-          profileImageUrl: _user!.profileImageUrl,
-          professionName: _user!.professionName,
-          workCities: _user!.workCities,
-          isAvailable: isAvailable, // القيمة الجديدة
-          rating: _user!.rating,
-          reviewCount: _user!.reviewCount,
-          createdAt: _user!.createdAt,
-        );
-        // ------------------------------------------
-        notifyListeners();
-      } catch (e) {
-        print("Failed to update availability: $e");
-      }
-    }
-  }
 
-  Future<void> refreshUser() async {
-    if(_user != null) {
-      await _fetchUser(_user!.id);
+  // --- الدوال المضافة لإصلاح الأخطاء ---
+  Future<void> updateUserProfile(String userId, Map<String, dynamic> data) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _firestore.collection('users').doc(userId).update(data);
+      await _fetchUser(userId); // إعادة جلب بيانات المستخدم المحدثة
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
+
+  Future<void> updateUserType(String userId, String newUserType) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _firestore.collection('users').doc(userId).update({'userType': newUserType});
+      await _fetchUser(userId);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+  // --- نهاية الدوال المضافة ---
 }
