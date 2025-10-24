@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum UserType { client, craftsman, supplier }
-
 class UserModel {
   final String id;
   final String name;
@@ -12,6 +10,7 @@ class UserModel {
   final String? professionId;
   final String? professionName;
   final List<String> workCities;
+  final String? country; // <-- تم إضافة الدولة
   final bool? isAvailable;
   final double rating;
   final int reviewCount;
@@ -27,6 +26,7 @@ class UserModel {
     this.professionId,
     this.professionName,
     this.workCities = const [],
+    this.country, // <-- تم إضافة الدولة
     this.isAvailable,
     this.rating = 0.0,
     this.reviewCount = 0,
@@ -46,6 +46,7 @@ class UserModel {
       professionId: data['professionId'],
       professionName: data['professionName'],
       workCities: List<String>.from(data['workCities'] ?? []),
+      country: data['country'], // <-- تم إضافة الدولة
       isAvailable: data['isAvailable'],
       rating: (data['rating'] ?? 0.0).toDouble(),
       reviewCount: data['reviewCount'] ?? 0,
@@ -71,10 +72,46 @@ class UserModel {
       'professionId': professionId,
       'professionName': professionName,
       'workCities': workCities,
+      'country': country, // <-- تم إضافة الدولة
       'isAvailable': isAvailable,
       'rating': rating,
       'reviewCount': reviewCount,
       'createdAt': createdAt,
     };
+  }
+  
+  // --- دالة copyWith المضافة لإصلاح الخطأ ---
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phoneNumber,
+    String? userType,
+    String? profileImageUrl,
+    String? professionId,
+    String? professionName,
+    List<String>? workCities,
+    String? country,
+    bool? isAvailable,
+    double? rating,
+    int? reviewCount,
+    Timestamp? createdAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      userType: userType ?? this.userType,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      professionId: professionId ?? this.professionId,
+      professionName: professionName ?? this.professionName,
+      workCities: workCities ?? this.workCities,
+      country: country ?? this.country,
+      isAvailable: isAvailable ?? this.isAvailable,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }
