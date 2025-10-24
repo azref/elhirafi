@@ -1,3 +1,5 @@
+// lib/screens/auth/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
@@ -5,8 +7,8 @@ import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import 'forgot_password_screen.dart'; // <-- تم إضافة الاستيراد
-import 'register_screen.dart';
+import 'forgot_password_screen.dart';
+import 'register_screen.dart'; // <-- تم الإبقاء على هذا الاستيراد فقط
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -112,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                // *** الكود المضاف هنا ***
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
@@ -124,8 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(AppStrings.forgotPassword),
                   ),
                 ),
-                // *** نهاية الكود المضاف ***
-                const SizedBox(height: 16), // تم تعديل المسافة لتكون متناسقة
+                const SizedBox(height: 16),
                 Consumer<AuthProvider>(
                   builder: (context, auth, child) {
                     return auth.isLoading
