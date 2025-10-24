@@ -9,9 +9,7 @@ import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-// --- تم إرجاع المسار الصحيح هنا ---
 import '../../data/cities_data.dart';
-// ---------------------------------
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -320,24 +318,51 @@ class _CitySelectionDialog extends StatefulWidget {
 
 class _CitySelectionDialogState extends State<_CitySelectionDialog> {
   late List<String> _tempSelectedCities;
-  String _searchQuery = '';
   String? _selectedCountry;
+  String? _selectedRegion;
+  String? _selectedCity;
+
+  List<String> _countries = [];
+  List<String> _regions = [];
+  List<String> _cities = [];
+  List<String> _districts = [];
 
   @override
   void initState() {
     super.initState();
     _tempSelectedCities = List.from(widget.initialSelectedCities);
+    _countries = CitiesData.getCountries();
   }
 
-  List<String> get _filteredCities {
-    if (_selectedCountry == null) {
-      return [];
-    }
-    final cities = citiesByCountry[_selectedCountry] ?? [];
-    if (_searchQuery.isEmpty) {
-      return cities;
-    }
-    return cities.where((city) => city.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+  void _onCountryChanged(String? newValue) {
+    setState(() {
+      _selectedCountry = newValue;
+      _selectedRegion = null;
+      _selectedCity = null;
+      _regions = _selectedCountry != null ? CitiesData.getRegions(_selectedCountry!) : [];
+      _cities = [];
+      _districts = [];
+    });
+  }
+
+  void _onRegionChanged(String? newValue) {
+    setState(() {
+      _selectedRegion = newValue;
+      _selectedCity = null;
+      _cities = (_selectedCountry != null && _selectedRegion != null)
+          ? CitiesData.getCities(_selectedCountry!, _selectedRegion!)
+          : [];
+      _districts = [];
+    });
+  }
+
+  void _onCityChanged(String? newValue) {
+    setState(() {
+      _selectedCity = newValue;
+      _districts = (_selectedCountry != null && _selectedRegion != null && _selectedCity != null)
+          ? CitiesData.getDistricts(_selectedCountry!, _selectedRegion!, _selectedCity!)
+          : [];
+    });
   }
 
   @override
@@ -346,67 +371,69 @@ class _CitySelectionDialogState extends State<_CitySelectionDialog> {
       title: const Text(AppStrings.selectWorkCities),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButton<String>(
-              value: _selectedCountry,
-              hint: const Text(AppStrings.selectCountry),
-              isExpanded: true,
-              items: citiesByCountry.keys.map((String country) {
-                return DropdownMenuItem<String>(
-                  value: country,
-                  child: Text(country),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedCountry = newValue;
-                  _searchQuery = '';
-                });
-              },
-            ),
-            if (_selectedCountry != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.search,
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: _selectedCountry,
+                hint: const Text('اختر الدولة'),
+                isExpanded: true,
+                items: _countries.map((String country) {
+                  return DropdownMenuItem<String>(value: country, child: Text(country));
+                }).toList(),
+                onChanged: _onCountryChanged,
+              ),
+              if (_selectedCountry != null) const SizedBox(height: 10),
+              if (_selectedCountry != null)
+                DropdownButtonFormField<String>(
+                  value: _selectedRegion,
+                  hint: const Text('اختر المنطقة/الجهة'),
+                  isExpanded: true,
+                  items: _regions.map((String region) {
+                    return DropdownMenuItem<String>(value: region, child: Text(region));
+                  }).toList(),
+                  onChanged: _onRegionChanged,
+                ),
+              if (_selectedRegion != null) const SizedBox(height: 10),
+              if (_selectedRegion != null)
+                DropdownButtonFormField<String>(
+                  value: _selectedCity,
+                  hint: const Text('اختر المحافظة/المدينة'),
+                  isExpanded: true,
+                  items: _cities.map((String city) {
+                    return DropdownMenuItem<String>(value: city, child: Text(city));
+                  }).toList(),
+                  onChanged: _onCityChanged,
+                ),
+              const SizedBox(height: 10),
+              if (_districts.isNotEmpty)
+                SizedBox(
+                  height: 200, // To make the list scrollable
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _districts.length,
+                    itemBuilder: (context, index) {
+                      final district = _districts[index];
+                      final isSelected = _tempSelectedCities.contains(district);
+                      return CheckboxListTile(
+                        title: Text(district),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _tempSelectedCities.add(district);
+                            } else {
+                              _tempSelectedCities.remove(district);
+                            }
+                          });
+                        },
+                      );
+                    },
                   ),
                 ),
-              ),
-            if (_selectedCountry != null)
-              Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _filteredCities.length,
-                  itemBuilder: (context, index) {
-                    final city = _filteredCities[index];
-                    final isSelected = _tempSelectedCities.contains(city);
-                    return CheckboxListTile(
-                      title: Text(city),
-                      value: isSelected,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            _tempSelectedCities.add(city);
-                          } else {
-                            _tempSelectedCities.remove(city);
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
