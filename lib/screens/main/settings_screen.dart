@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+// import 'package:package_info_plus/package_info_plus.dart'; // <-- تم تعطيل هذا السطر
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../constants/app_colors.dart';
@@ -24,16 +24,17 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false;
+  final bool _isDarkMode = false;
   String _selectedLanguage = 'العربية';
-  String _appVersion = '';
+  final String _appVersion = '1.0.0'; // <-- تم وضع قيمة افتراضية مؤقتًا
 
   @override
   void initState() {
     super.initState();
-    _getAppVersion();
+    // _getAppVersion(); // تم تعطيل استدعاء الدالة لتجنب الأخطاء
   }
 
+  /* // تم تعطيل الدالة بالكامل لتجنب الأخطاء
   Future<void> _getAppVersion() async {
     try {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -46,6 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       print("Failed to get app version: $e");
     }
   }
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -104,13 +106,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               },
             ),
-            // _buildSettingsTile(
-            //   icon: Icons.description,
-            //   title: AppStrings.termsOfService,
-            //   onTap: () {
-            //     Navigator.pushNamed(context, '/terms_of_service');
-            //   },
-            // ),
             _buildSettingsTile(
               icon: Icons.info,
               title: AppStrings.aboutUs,
@@ -380,13 +375,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
               try {
                 await authProvider.updateUserType(authProvider.user!.id, newMode);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تغيير الوضع بنجاح')),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم تغيير الوضع بنجاح')),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('فشل تغيير الوضع: ${e.toString()}')),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('فشل تغيير الوضع: ${e.toString()}')),
+                  );
+                }
               }
             },
             child: const Text(AppStrings.confirm),
