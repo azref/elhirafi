@@ -73,8 +73,6 @@ flutter:
   
   assets:
     - assets/images/
-    - assets/icons/
-    - assets/audio/
     - assets/fonts/
     - assets/privacy_policy.md
     - assets/terms_of_service.md
@@ -83,5 +81,5 @@ flutter:
     - family: Cairo
       fonts:
         - asset: assets/fonts/Cairo-Regular.ttf
-        - asset: assets/fonts/Cairo-Bold.ttf
+        - asset: assets-fonts/Cairo-Bold.ttf
           weight: 700
