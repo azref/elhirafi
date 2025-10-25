@@ -19,30 +19,28 @@ import 'screens/content/about_us_screen.dart';
 import 'screens/content/contact_us_screen.dart';
 import 'services/ads_service.dart';
 
-// 2. The main function (النسخة النهائية مع الحل)
+// 2. The main function (النسخة الأكثر أمانًا)
 void main() async {
   try {
-    // Ensure Flutter is initialized
+    // تأكد من تهيئة Flutter أولاً وقبل كل شيء
     WidgetsFlutterBinding.ensureInitialized();
 
-    // -- هذا هو التعديل الرئيسي --
-    // التحقق أولاً إذا كان Firebase قد تم تهيئته بالفعل
+    // التحقق إذا كان Firebase قد تم تهيئته بالفعل
     if (Firebase.apps.isEmpty) {
       // إذا لم يتم تهيئته، نقوم نحن بتهيئته
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-    // -- نهاية التعديل --
 
     // Initialize Ads and preload interstitial
-    await AdsService.initialize(); // <-- تمت إعادة تفعيله
+    await AdsService.initialize();
 
     // تشغيل التطبيق الرئيسي
     runApp(const MyApp());
 
   } catch (e) {
-    // في حالة حدوث أي خطأ أثناء التهيئة، سيتم عرض شاشة الخطأ
+    // عرض شاشة الخطأ
     runApp(ErrorScreen(error: e.toString()));
   }
 }
