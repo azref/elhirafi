@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/profession_model.dart';
+import '../data/professions_data.dart'; // <-- تم إضافة هذا الاستيراد
 
 class ProfessionProvider with ChangeNotifier {
   // يحتوي على قائمة المهن الثابتة من الموديل
