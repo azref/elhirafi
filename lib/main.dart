@@ -14,7 +14,7 @@ import 'screens/main/main_screen.dart';
 import 'screens/main/settings_screen.dart';
 import 'screens/supplier/store_management_screen.dart';
 import 'screens/content/privacy_policy_screen.dart';
-// import 'screens/content/terms_of_service_screen.dart'; // <--- تم التعديل هنا
+import 'screens/content/terms_of_service_screen.dart';
 import 'screens/content/about_us_screen.dart';
 import 'screens/content/contact_us_screen.dart';
 import 'services/ads_service.dart';
@@ -71,7 +71,7 @@ class MyApp extends StatelessWidget {
           '/settings': (context) => const SettingsScreen(),
           '/store_management': (context) => const StoreManagementScreen(),
           '/privacy_policy': (context) => const PrivacyPolicyScreen(),
-          // '/terms_of_service': (context) => const TermsOfServiceScreen(), // <--- تم التعديل هنا
+          '/terms_of_service': (context) => const TermsOfServiceScreen(),
           '/about_us': (context) => const AboutUsScreen(),
           '/contact_us': (context) => const ContactUsScreen(),
         }
