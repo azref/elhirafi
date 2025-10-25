@@ -22,7 +22,11 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Install dependencies
+      # -- الخطوة الجديدة والمهمة --
+      - name: Clean Flutter project
+        run: flutter clean
+
+      - name: Get Flutter dependencies
         run: flutter pub get
 
       # نحلل الكود، نحفظ المخرجات ولكن لا نوقف الخط هنا تلقائياً
@@ -75,3 +79,4 @@ jobs:
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
