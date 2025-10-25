@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
+import '../../models/store_model.dart'; // <-- تم إضافة هذا الاستيراد
 import '../../providers/auth_provider.dart';
 import '../../services/store_service.dart';
 import '../../widgets/banner_ad_widget.dart';
@@ -29,10 +30,12 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     if (user == null) return;
 
     final store = await _storeService.getStoreBySupplier(user.uid);
-    setState(() {
-      _store = store;
-      _isLoading = false;
-    });
+    if(mounted){
+      setState(() {
+        _store = store;
+        _isLoading = false;
+      });
+    }
 
     if (store == null) {
       _showCreateStoreDialog();
@@ -156,7 +159,6 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
                     if (!_store!.isPremium)
                       ElevatedButton(
                         onPressed: () {
-                          // TODO: Show upgrade dialog
                           _showUpgradeDialog();
                         },
                         style: ElevatedButton.styleFrom(
@@ -519,4 +521,3 @@ class _StoreManagementScreenState extends State<StoreManagementScreen> {
     }
   }
 }
-
