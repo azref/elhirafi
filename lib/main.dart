@@ -19,22 +19,26 @@ import 'screens/content/about_us_screen.dart';
 import 'screens/content/contact_us_screen.dart';
 import 'services/ads_service.dart';
 
-// 2. The main function (النسخة الجديدة مع معالجة الأخطاء)
+// 2. The main function (النسخة النهائية مع الحل)
 void main() async {
   try {
     // Ensure Flutter is initialized
     WidgetsFlutterBinding.ensureInitialized();
 
-    // Initialize Firebase
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    // -- هذا هو التعديل الرئيسي --
+    // التحقق أولاً إذا كان Firebase قد تم تهيئته بالفعل
+    if (Firebase.apps.isEmpty) {
+      // إذا لم يتم تهيئته، نقوم نحن بتهيئته
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    // -- نهاية التعديل --
 
     // Initialize Ads and preload interstitial
-    // تم تعليق هذا السطر مؤقتًا لتشخيص المشكلة
-    // await AdsService.initialize();
+    await AdsService.initialize(); // <-- تمت إعادة تفعيله
 
-    // تشغيل التطبيق الرئيسي إذا نجحت التهيئة
+    // تشغيل التطبيق الرئيسي
     runApp(const MyApp());
 
   } catch (e) {
@@ -42,6 +46,7 @@ void main() async {
     runApp(ErrorScreen(error: e.toString()));
   }
 }
+
 
 // 3. The root widget of the application
 class MyApp extends StatelessWidget {
