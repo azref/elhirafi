@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors - Dark Mode -->
+    <color name="primaryColor">#4CAF50</color>
+    <color name="primaryDark">#2E7D32</color>
+    <color name="primaryLight">#81C784</color>
+    <color name="accent">#FFB74D</color>
+    
+    <!-- Background Colors - Dark Mode -->
+    <color name="backgroundColor">#121212</color>
+    <color name="surfaceColor">#1E1E1E</color>
+    
+    <!-- Text Colors - Dark Mode -->
+    <color name="textPrimary">#FFFFFF</color>
+    <color name="textSecondary">#B0B0B0</color>
+    <color name="textHint">#757575</color>
+    
+    <!-- Status Colors - Dark Mode -->
+    <color name="success">#66BB6A</color>
+    <color name="error">#EF5350</color>
+    <color name="warning">#FFA726</color>
+    <color name="info">#42A5F5</color>
+    
+    <!-- Craftsman Theme - Dark Mode -->
+    <color name="craftsman_orange">#FFB74D</color>
+    <color name="craftsman_blue">#42A5F5</color>
+    <color name="craftsman_green">#66BB6A</color>
+    <color name="craftsman_gray">#9E9E9E</color>
+</resources>
+
