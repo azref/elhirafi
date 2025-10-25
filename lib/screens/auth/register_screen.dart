@@ -7,7 +7,7 @@ import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../data/cities_data.dart';
+import '../../data/cities_data.dart'; // <-- تم إعادة تفعيل هذا الاستيراد
 import '../../data/professions_data.dart';
 import '../../models/user_model.dart';
 
@@ -122,9 +122,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         };
         // Note: Email and password updates are handled separately for security
         await authProvider.updateUserProfile(widget.userToEdit!.id, updates);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تحديث الملف الشخصي بنجاح')),
-        );
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تحديث الملف الشخصي بنجاح')),
+          );
+        }
       } else {
         // --- Logic for new registration ---
         await authProvider.register(
@@ -138,9 +140,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           country: _selectedCountry,
           profileImage: _image,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم التسجيل بنجاح')),
-        );
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم التسجيل بنجاح')),
+          );
+        }
       }
       if (mounted) {
         Navigator.of(context).pop();
