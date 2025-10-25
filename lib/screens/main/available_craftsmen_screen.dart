@@ -7,7 +7,7 @@ import '../../constants/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../data/professions_data.dart';
-import '../../data/cities_data.dart'; // <-- تم تفعيل هذا السطر
+import '../../data/cities_data.dart';
 
 class AvailableCraftsmenScreen extends StatefulWidget {
   const AvailableCraftsmenScreen({super.key});
@@ -244,3 +244,104 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: AppColors.primaryColor,
+                  backgroundImage: craftsman.profileImageUrl.isNotEmpty
+                      ? NetworkImage(craftsman.profileImageUrl)
+                      : null,
+                  child: craftsman.profileImageUrl.isEmpty
+                      ? Text(
+                          craftsman.name.isNotEmpty ? craftsman.name[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        craftsman.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        craftsman.professionName ?? 'حرفي',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              craftsman.workCities.join(', '),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isClient ? () => _contactCraftsman(craftsman) : null,
+                    icon: const Icon(Icons.chat, size: 18),
+                    label: const Text('محادثة'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isClient ? () => _callCraftsman(craftsman) : null,
+                    icon: const Icon(Icons.phone, size: 18),
+                    label: const Text('اتصال'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _contactCraftsman(UserModel craftsman) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('المحادثة قريباً')),
+    );
+  }
+
+  void _callCraftsman(UserModel craftsman) async {
+    final url = Uri.parse('tel:${craftsman.phoneNumber}');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('لا يمكن إجراء الاتصال بالرقم ${craftsman.phoneNumber}')),
+        );
+      }
+    }
+  }
+}
