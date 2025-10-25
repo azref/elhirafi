@@ -7,7 +7,7 @@ import '../../constants/app_strings.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../data/professions_data.dart';
-import '../../data/cities_data.dart';
+import '../../data/cities_data.dart'; // <-- تم إعادة تفعيل هذا الاستيراد
 
 class AvailableCraftsmenScreen extends StatefulWidget {
   const AvailableCraftsmenScreen({super.key});
@@ -20,7 +20,7 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ScrollController _scrollController = ScrollController();
   
-  List<UserModel> _craftsmen = [];
+  final List<UserModel> _craftsmen = [];
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
   bool _hasMore = true;
@@ -188,13 +188,13 @@ class _AvailableCraftsmenScreenState extends State<AvailableCraftsmenScreen> {
           ),
           Expanded(
             child: _craftsmen.isEmpty && !_isLoading
-                ? Center(
+                ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.person_search, size: 64, color: Colors.grey),
-                        const SizedBox(height: 16),
-                        const Text(
+                        Icon(Icons.person_search, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
                           'لا يوجد حرفيون متاحون',
                           style: TextStyle(fontSize: 16, color: Colors.grey),
                         ),
