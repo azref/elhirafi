@@ -7,7 +7,7 @@ import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../data/cities_data.dart'; // <-- تم تفعيل هذا السطر
+import '../../data/cities_data.dart';
 import '../../data/professions_data.dart';
 import '../../models/user_model.dart';
 
