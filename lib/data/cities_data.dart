@@ -45,7 +45,7 @@ const Map<String, Map<String, dynamic>> arabicCitiesHierarchy = {
       'إقليم بني ملال': ['بني ملال', 'قصبة تادلة', 'زاوية الشيخ'],
       'إقليم خريبكة': ['خريبكة', 'وادي زم', 'بوجنيبة', 'أبي الجعد'],
       'إقليم خنيفرة': ['خنيفرة', 'مريرت'],
-      'إقليم أزيلال': ['أزيلال', 'دمنات'],
+      'إقليم أزيلال': ['أزيلal', 'دمنات'],
       'إقليم الفقيه بن صالح': ['الفقيه بن صالح', 'سوق السبت أولاد النمة'],
     },
     'جهة الدار البيضاء - سطات': {
@@ -223,21 +223,50 @@ const Map<String, Map<String, dynamic>> arabicCitiesHierarchy = {
       'بلدية غريان': ['غريان', 'الأصابعة', 'القلعة'],
       'بلدية يفرن': ['يفرن', 'الرحيبات', 'تغرمين'],
     },
-    'منطقة زليتن': {
-      'بلدية زليتن': ['زليتن', 'الدافنية', 'ماجر'],
-      'بلدية الخمس': ['الخمس', 'لبدة', 'سيلين'],
-    },
-    'منطقة نالوت': {
-      'بلدية نالوت': ['نالوت', 'وازن', 'الحرابة'],
-      'بلدية غات': ['غات', 'البركت', 'العوينات'],
-    },
-    'منطقة الجفرة': {
-      'بلدية هون': ['هون', 'ودان', 'سوكنة'],
-      'بلدية وادي الشاطئ': ['وادي الشاطئ', 'أوباري', 'ترهونة'],
-    },
-    'منطقة الكفرة': {
-      'بلدية الكفرة': ['الكفرة', 'التاج', 'ربيانة'],
-      'بلدية جالو': ['جالو', 'أوجلة', 'إجخرة'],
-    },
+    'منطقة زليتن': ['زليتن', 'الدافنية', 'ماجر', 'الجميعات'],
+    'منطقة الخمس': ['الخمس', 'لبدة', 'سيلين', 'القره بولي'],
+    'منطقة نالوت': ['نالوت', 'وازن', 'الحرابة', 'كاباو'],
+    'منطقة غدامس': ['غدامس', 'درج', 'سيناون'],
+    'منطقة الجفرة': ['هون', 'ودان', 'سوكنة', 'الفقهاء'],
+    'منطقة الكفرة': ['الكفرة', 'التاج', 'ربيانة', 'بزيمة'],
+    'منطقة المرج': ['المرج', 'الأبيار', 'تاكنس', 'العويلية'],
+    'منطقة الواحات': ['جالو', 'أوجلة', 'إجخرة'],
+    'منطقة وادي الشاطئ': ['براك', 'أقار', 'القرضة الشاطئ'],
+    'منطقة مرزق': ['مرزق', 'أم الأرانب', 'القطرون', 'تراغن'],
+    'منطقة غات': ['غات', 'العوينات', 'البركت'],
   },
 };
+
+// دالة مساعدة للتعامل مع البيانات
+class CitiesData {
+  static List<String> getCountries() {
+    return arabicCitiesHierarchy.keys.toList();
+  }
+
+  static List<String> getRegions(String country) {
+    if (arabicCitiesHierarchy.containsKey(country)) {
+      // المستوى الثاني: الجهات/الولايات/المحافظات
+      return arabicCitiesHierarchy[country]!.keys.toList();
+    }
+    return [];
+  }
+
+  static List<String> getCities(String country, String region) {
+    if (arabicCitiesHierarchy.containsKey(country) &&
+        arabicCitiesHierarchy[country]!.containsKey(region)) {
+      // المستوى الثالث: العمالات/الدوائر/المعتمديات
+      return arabicCitiesHierarchy[country]![region]!.keys.toList();
+    }
+    return [];
+  }
+
+  static List<String> getDistricts(String country, String region, String city) {
+    if (arabicCitiesHierarchy.containsKey(country) &&
+        arabicCitiesHierarchy[country]!.containsKey(region) &&
+        arabicCitiesHierarchy[country]![region]!.containsKey(city)) {
+      // المستوى الرابع: المدن/البلديات
+      return arabicCitiesHierarchy[country]![region]![city]!;
+    }
+    return [];
+  }
+}
