@@ -7,14 +7,10 @@ import '../../constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../data/cities_data.dart'; // <-- تم التأكيد على وجود هذا الاستيراد
+import '../../data/cities_data.dart'; // <-- تم تفعيل هذا السطر
 import '../../data/professions_data.dart';
 import '../../models/user_model.dart';
 
-// ... (باقي الكود يبقى كما هو دون تغيير)
-// The rest of the file content is identical to the previous correct version.
-// No changes are needed here as the error was due to other files.
-// I'm omitting it to keep the response concise, but the file is considered correct.
 class RegisterScreen extends StatefulWidget {
   final bool isEditing;
   final UserModel? userToEdit;
@@ -78,7 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
-        _networkImageUrl = null; // Clear network image if a new one is picked
+        _networkImageUrl = null;
       });
     }
   }
@@ -105,9 +101,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     if (_userType == AppStrings.craftsman && (_selectedProfession == null || _selectedWorkCities.isEmpty || _selectedCountry == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إكمال جميع الحقول المطلوبة للحرفي')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('الرجاء إكمال جميع الحقول المطلوبة للحرفي')),
+        );
+      }
       return;
     }
 
